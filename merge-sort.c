@@ -65,6 +65,7 @@ int main(int argc, char const *argv[]) {
       shmctl(shmid, IPC_RMID, NULL);
     }
     else{
+      
         begin = 0;
         middle = (index - 1) / 2;
         end = index - 1;
