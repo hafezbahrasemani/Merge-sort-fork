@@ -4,12 +4,13 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <unistd.h>
 
-
-#define SIZE 10000
+#define SIZE 20
 
 void sort(int begin, int end);
 void merge(int begin1, int end1, int begin2, int end2);
+void print_array(void);
 
 //Shared memory
 int *shm;
@@ -20,7 +21,6 @@ int internal[SIZE];
 
 int main(int argc, char const *argv[]) {
   pid_t left, right;
-
   key_t key;
   int shmid;
   int M;
@@ -46,19 +46,21 @@ int main(int argc, char const *argv[]) {
 
     //prompt the user to enter M
     printf("Please enter the value of M: ");
-    scanf("%d\n", &M);
+    scanf("%d", &M);
 
     //producing 10000 random numbers
-    while(index < 10000)
+    while(index < SIZE)
     {
-      shm[index++] = rand();
+      shm[index++] = (rand() % 100000) + 1;
     }
+    print_array();
 
     //should not use fork() if the number of elements is less than M
     if(index <= M)
     {
       sort(0, index);
       print_array();
+
       shmctl(shmid, IPC_RMID, NULL);
     }
     else{
@@ -68,11 +70,12 @@ int main(int argc, char const *argv[]) {
 
         left = fork();
         if(left == 0){
-          if((shm = shmat(key, NULL, 0) == (int *) -1)) perror("shmat");
+          if((shm = shmat(key, NULL, 0)) == (int *) -1) perror("shmat");
           sort(begin, middle);
         }else {
+          right = fork();
           if(right == 0){
-            if((shm = shmat(key, NULL, 0) == (int *) -1)) perror("shmat");
+            if((shm = shmat(key, NULL, 0)) == (int *) -1) perror("shmat");
             sort(middle + 1, end);
           } else{
                 waitpid(left, &status1, 0);
@@ -127,19 +130,22 @@ void merge(int begin1, int end1, int begin2, int end2)
   k = begin1;
 
   //in every iteration compares two ints from both parts and adds the smaller one to the internal array as an temp array
-  for(i = begin1, j = begin2; i <= end1, j <= end2; i++, j++)
+  for(i = begin1, j = begin2; i <= end1 && j <= end2; k++)
   {
-    if(shm[i] < shm[j]) internal[k++] = shm[i++];
-    else internal[k++] = shm[j++];
+    if(shm[i] < shm[j]) {
+      internal[k] = shm[i++];
+    } else {
+      internal[k] = shm[j++];
+    }
   }
 
 
-  for(l = i; l <= end1, l++) internal[k++] = shm[i];
+  for(l = i; l <= end1; l++) internal[k++] = shm[l];
 
-  for(l = j; l <= end2, l++) internal[k++] = shm[j];
+  for(l = j; l <= end2; l++) internal[k++] = shm[l];
 
   //filling the actual array
-  for(m = begin1; m <= end2, m++) shm[m] = internal[m];
+  for(m = begin1; m <= end2; m++) shm[m] = internal[m];
 }
 
 /*
@@ -147,7 +153,7 @@ void merge(int begin1, int end1, int begin2, int end2)
 */
 void print_array(void)
 {
-  for(int i = 0; i <= SIZE; i++){
+  for(int i = 0; i < SIZE; i++){
     printf("%d\n", shm[i]);
   }
 }
