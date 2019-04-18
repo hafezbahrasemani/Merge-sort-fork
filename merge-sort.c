@@ -16,7 +16,27 @@ int internal[SIZE];
 
 
 int main(int argc, char const *argv[]) {
+  pid_t left, right;
+
+  key_t key;
+  int shmid;
   
+   /*
+    * Create the segment.
+    */
+    if ((shmid = shmget(key, 4 * SIZE, IPC_CREAT | 0666)) < 0) {
+        perror("shmget");
+        exit(1);
+    }
+
+    /*
+     * Now we attach the segment to our data space.
+     */
+    if ((shm = shmat(shmid, NULL, 0)) == -1) {
+        perror("shmat");
+        exit(1);
+    }
+
 }
 
 
