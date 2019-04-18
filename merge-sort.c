@@ -1,12 +1,15 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+
 
 #define SIZE 10000
 
-
 void sort(int begin, int end);
-void merge(int begin1m int end1, int begin2, int end2);
+void merge(int begin1, int end1, int begin2, int end2);
 
 //Shared memory
 int *shm;
@@ -20,7 +23,10 @@ int main(int argc, char const *argv[]) {
 
   key_t key;
   int shmid;
-  
+  int M;
+  int index = 0;
+  int begin, middle, end;
+
    /*
     * Create the segment.
     */
@@ -32,11 +38,45 @@ int main(int argc, char const *argv[]) {
     /*
      * Now we attach the segment to our data space.
      */
-    if ((shm = shmat(shmid, NULL, 0)) == -1) {
+    if ((shm = shmat(shmid, NULL, 0)) == (int *) -1) {
         perror("shmat");
         exit(1);
     }
 
+    //prompt the user to enter M
+    printf("Please enter the value of M: ");
+    scanf("%d\n", &M);
+
+    //producing 10000 random numbers
+    while(index < 10000)
+    {
+      shm[index++] = rand();
+    }
+
+    //should not use fork() if the number of elements is less than M
+    if(index <= M)
+    {
+
+    }
+    else{
+        begin = 0;
+        middle = index / 2;
+        end = index;
+
+        left = fork();
+        if(left == 0){
+          if((shm = shmat(key, NULL, 0) == (int *) -1)) perror("shmat");
+          sort(begin, middle);
+        }else {
+          if(right == 0){
+            if((shm = shmat(key, NULL, 0) == (int *) -1)) perror("shmat");
+            sort(middle + 1, end);
+          } else{
+
+          }
+        }
+
+    }
 }
 
 
@@ -90,4 +130,12 @@ void merge(int begin1, int end1, int begin2, int end2)
 
   //filling the actual array
   for(m = begin1; m <= end2, m++) shm[m] = internal[m];
+}
+
+/*
+  this function prints the elements of the array
+*/
+void print_array(void)
+{
+
 }
