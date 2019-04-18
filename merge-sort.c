@@ -26,6 +26,7 @@ int main(int argc, char const *argv[]) {
   int M;
   int index = 0;
   int begin, middle, end;
+  int status1, status2;
 
    /*
     * Create the segment.
@@ -56,7 +57,9 @@ int main(int argc, char const *argv[]) {
     //should not use fork() if the number of elements is less than M
     if(index <= M)
     {
-
+      sort(0, index);
+      print_array();
+      shmctl(shmid, IPC_RMID, NULL);
     }
     else{
         begin = 0;
@@ -72,7 +75,14 @@ int main(int argc, char const *argv[]) {
             if((shm = shmat(key, NULL, 0) == (int *) -1)) perror("shmat");
             sort(middle + 1, end);
           } else{
+                waitpid(left, &status1, 0);
+                waitpid(right, &status2, 0);
 
+                merge(begin, middle, middle + 1, end);
+
+                print_array();
+
+                shmctl(shmid, IPC_RMID, NULL);
           }
         }
 
@@ -137,5 +147,7 @@ void merge(int begin1, int end1, int begin2, int end2)
 */
 void print_array(void)
 {
-
+  for(int i = 0; i <= SIZE; i++){
+    printf("%d\n", shm[i]);
+  }
 }
