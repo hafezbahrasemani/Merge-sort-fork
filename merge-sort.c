@@ -6,7 +6,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#define SIZE 20
+#define SIZE 10000
 
 void sort(int begin, int end);
 void merge(int begin1, int end1, int begin2, int end2);
@@ -31,7 +31,7 @@ int main(int argc, char const *argv[]) {
    /*
     * Create the segment.
     */
-    if ((shmid = shmget(key, 4 * SIZE, IPC_CREAT | 0666)) < 0) {
+    if ((shmid = shmget(key, sizeof(int) * SIZE, IPC_CREAT | 0666)) < 0) {
         perror("shmget");
         exit(1);
     }
@@ -58,24 +58,25 @@ int main(int argc, char const *argv[]) {
     //should not use fork() if the number of elements is less than M
     if(index <= M)
     {
-      sort(0, index);
+      sort(0, index - 1);
+      printf("----Sorted Array------\n");
       print_array();
 
       shmctl(shmid, IPC_RMID, NULL);
     }
     else{
         begin = 0;
-        middle = index / 2;
-        end = index;
+        middle = (index - 1) / 2;
+        end = index - 1;
 
         left = fork();
         if(left == 0){
-          if((shm = shmat(key, NULL, 0)) == (int *) -1) perror("shmat");
+          if((shm = shmat(shmid, (void *) 0, SHM_RND)) == (int *) -1) perror("shmat");
           sort(begin, middle);
         }else {
           right = fork();
           if(right == 0){
-            if((shm = shmat(key, NULL, 0)) == (int *) -1) perror("shmat");
+            if((shm = shmat(shmid, (void *) 0, SHM_RND)) == (int *) -1) perror("shmat");
             sort(middle + 1, end);
           } else{
                 waitpid(left, &status1, 0);
@@ -83,8 +84,10 @@ int main(int argc, char const *argv[]) {
 
                 merge(begin, middle, middle + 1, end);
 
+                printf("----Sorted Array------\n");
                 print_array();
 
+                if((shmdt(shm)) == -1) perror("shmat");
                 shmctl(shmid, IPC_RMID, NULL);
           }
         }
