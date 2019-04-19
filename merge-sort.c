@@ -11,7 +11,6 @@
 void sort(int begin, int end);
 void merge(int begin1, int end1, int begin2, int end2);
 void print_array(void);
-void create_shm(void);
 
 //Shared memory
 int *shm;
@@ -64,25 +63,6 @@ int main(int argc, char const *argv[]) {
 }
 
 
-void create_shm(void)
-{
-  /*
-   * Create the segment.
-   */
-   if ((shmid = shmget(key, sizeof(int) * SIZE, IPC_CREAT | 0666)) < 0) {
-       perror("shmget");
-       exit(1);
-   }
-
-   /*
-    * Now we attach the segment to our data space.
-    */
-   if ((shm = shmat(shmid, NULL, 0)) == (int *) -1) {
-       perror("shmat");
-       exit(1);
-   }
-
-}
 /*
  The sort function which is a recursive function
  that is based on merge-sort algorithm.
@@ -99,6 +79,7 @@ void sort(int begin, int end)
 
   else
   {
+     middle = (begin + end) / 2;
 
      //should not use fork() if the number of elements is less than M
      if((end - begin + 1) <= M)
@@ -112,19 +93,18 @@ void sort(int begin, int end)
        //printf("----No Fork()------\n");
        //print_array();
 
-       //shmctl(shmid, IPC_RMID, NULL);
+       shmctl(shmid, IPC_RMID, NULL);
      }
      else{
-         middle = (begin + end) / 2;
 
          left = fork();
          if(left == 0){
-           if((shm = shmat(shmid, (void *) 0, SHM_RND)) == (int *) -1) perror("shmat");
+           //if((shm = shmat(shmid, (void *) 0, SHM_RND)) == (int *) -1) perror("shmat");
            sort(begin, middle);
          }else {
            right = fork();
            if(right == 0){
-             if((shm = shmat(shmid, (void *) 0, SHM_RND)) == (int *) -1) perror("shmat");
+            // if((shm = shmat(shmid, (void *) 0, SHM_RND)) == (int *) -1) perror("shmat");
              sort(middle + 1, end);
            } else{
                  waitpid(left, &status1, 0);
@@ -132,9 +112,9 @@ void sort(int begin, int end)
 
                  merge(begin, middle, middle + 1, end);
 
-                 shmdt(shm);
+            //     shmdt(shm);
 //                 if((shmdt(shm)) == -1) perror("shmat");
-//                 shmctl(shmid, IPC_RMID, NULL);
+            //     shmctl(shmid, IPC_RMID, NULL);
            }
          }
 
